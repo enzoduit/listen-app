@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#121212">
+
+    <TextView
+        android:id="@+id/textTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Listen"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:paddingBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/textBleStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="BLE: Idle"
+        android:textSize="16sp"
+        android:textColor="#4CAF50"
+        android:paddingBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/textUploadCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Uploads: 0"
+        android:textSize="14sp"
+        android:textColor="#AAAAAA"
+        android:paddingBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/textLastUpload"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Last upload: Never"
+        android:textSize="14sp"
+        android:textColor="#AAAAAA"
+        android:paddingBottom="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="8dp">
+
+        <Button
+            android:id="@+id/btnStart"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Start Sync"
+            android:backgroundTint="#4CAF50"/>
+
+        <Button
+            android:id="@+id/btnStop"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Stop"
+            android:backgroundTint="#F44336"/>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Log"
+        android:textSize="12sp"
+        android:textColor="#888888"
+        android:paddingBottom="4dp"/>
+
+    <ListView
+        android:id="@+id/listLog"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#1E1E1E"
+        android:dividerHeight="1dp"
+        android:divider="#333333"/>
+
+</LinearLayout>
