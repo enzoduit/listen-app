@@ -262,8 +262,28 @@ class PendantBleManager(private val application: Application) {
                 completeCommand()
                 return
             }
-            Log.i(TAG, "Services discovered for $address (status=$status)")
+            Log.i(TAG, "Services discovered for $address (status=$status) — ${gatt.services.size} services")
+            gatt.services.forEach { svc -> Log.i(TAG, "  svc=${svc.uuid}") }
+
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                // Check if we got the Limitless service — if not, retry discovery after 2s
+                val hasLimitless = gatt.services.any {
+                    it.uuid.toString().startsWith("632de001", ignoreCase = true)
+                }
+                if (!hasLimitless && gatt.services.size <= 2) {
+                    Log.w(TAG, "Limitless service not found (only ${gatt.services.size} services) — retrying discovery in 2s")
+                    completeCommand()
+                    mainHandler.postDelayed({
+                        Log.i(TAG, "Retrying discoverServices for $address")
+                        enqueueCommand {
+                            if (!gatt.discoverServices()) {
+                                Log.e(TAG, "Retry discoverServices returned false")
+                                completeCommand()
+                            }
+                        }
+                    }, 2000)
+                    return
+                }
                 servicesDiscoveredFor.add(address)
                 gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
             }
