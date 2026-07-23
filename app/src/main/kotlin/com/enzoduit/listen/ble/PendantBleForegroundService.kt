@@ -29,7 +29,8 @@ class PendantBleForegroundService : Service() {
         private const val TAG = "Listen.Service"
         const val CHANNEL_ID = "listen_ble_channel"
         const val NOTIF_ID = 1001
-        const val TARGET_ADDRESS = "FD:04:D0:EB:84:88"
+        const val DEFAULT_ADDRESS = "FD:04:D0:EB:84:88"
+        var targetAddress: String = DEFAULT_ADDRESS
         const val LIMITLESS_SERVICE_UUID = "632de001-604c-446b-a80f-7963e950f3fb"
         const val LIMITLESS_RX_UUID = "632de003-604c-446b-a80f-7963e950f3fb"
 
@@ -66,7 +67,7 @@ class PendantBleForegroundService : Service() {
             triggerUpload()
         }
         drainEngine = LimitlessFlashDrainEngine(
-            deviceAddress = TARGET_ADDRESS,
+            deviceAddress = targetAddress,
             serviceUuid = LIMITLESS_SERVICE_UUID,
             rxCharUuid = LIMITLESS_RX_UUID,
             writer = writer,
@@ -124,7 +125,7 @@ class PendantBleForegroundService : Service() {
             }
         }
 
-        log("Service started, connecting to $TARGET_ADDRESS")
+        log("Service started, connecting to $targetAddress")
         connect()
     }
 
@@ -141,8 +142,8 @@ class PendantBleForegroundService : Service() {
         super.onDestroy()
         reconnectRunnable?.let { mainHandler.removeCallbacks(it) }
         drainEngine.stop("service_destroyed")
-        bleManager.disconnectGatt(TARGET_ADDRESS)
-        bleManager.closeGatt(TARGET_ADDRESS)
+        bleManager.disconnectGatt(targetAddress)
+        bleManager.closeGatt(targetAddress)
         log("Service destroyed")
     }
 
@@ -155,8 +156,8 @@ class PendantBleForegroundService : Service() {
         }
         updateNotification("Connecting to pendant...")
         broadcastStatus("Connecting...")
-        log("Connecting to $TARGET_ADDRESS")
-        bleManager.connectGatt(TARGET_ADDRESS, autoConnect = false)
+        log("Connecting to $targetAddress")
+        bleManager.connectGatt(targetAddress, autoConnect = false)
     }
 
     private fun subscribeAndStart(address: String) {
