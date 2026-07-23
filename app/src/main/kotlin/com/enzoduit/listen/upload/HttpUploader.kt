@@ -21,7 +21,7 @@ class HttpUploader(
 ) {
     companion object {
         private const val TAG = "Listen.Uploader"
-        private const val ENDPOINT = "https://pendant-backend-production-e97c.up.railway.app/v2/sync-local-files"
+        private const val ENDPOINT = "http://188.245.214.39:8899/v2/sync-local-files"
         private const val API_KEY = "pendant-ed-2026"
         private const val TIMEOUT_MS = 60_000
         private const val BOUNDARY = "----ListenBoundary7MA4YWxkTrZu0gW"
