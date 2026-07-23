@@ -36,6 +36,52 @@ class PendantBleManager(private val application: Application) {
     val mainHandler = Handler(Looper.getMainLooper())
 
     val connectedGatts = ConcurrentHashMap<String, BluetoothGatt>()
+
+    // Bond state receiver — triggers service discovery after bonding completes
+    private val bondReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context, intent: android.content.Intent) {
+            if (intent.action != BluetoothDevice.ACTION_BOND_STATE_CHANGED) return
+            val device = if (Build.VERSION.SDK_INT >= 33) {
+                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+            } ?: return
+            val bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE)
+            val address = device.address.uppercase()
+            Log.i(TAG, "Bond state changed: $address → $bondState")
+
+            if (bondState == BluetoothDevice.BOND_BONDED) {
+                val gatt = connectedGatts[address] ?: return
+                Log.i(TAG, "Bonded! Starting service discovery for $address")
+                mainHandler.postDelayed({
+                    enqueueCommand {
+                        if (!gatt.discoverServices()) {
+                            Log.e(TAG, "discoverServices after bond returned false")
+                            completeCommand()
+                        }
+                    }
+                }, 600)
+            } else if (bondState == BluetoothDevice.BOND_NONE) {
+                // Bond failed — try discovery anyway (some devices don't require bonding)
+                Log.w(TAG, "Bond failed for $address — trying service discovery anyway")
+                val gatt = connectedGatts[address] ?: return
+                mainHandler.postDelayed({
+                    enqueueCommand {
+                        if (!gatt.discoverServices()) {
+                            Log.e(TAG, "discoverServices (no bond) returned false")
+                            completeCommand()
+                        }
+                    }
+                }, 600)
+            }
+        }
+    }
+
+    init {
+        val filter = android.content.IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
+        application.registerReceiver(bondReceiver, filter)
+    }
     private val writeCompletions = ConcurrentHashMap<String, (Result<Unit>) -> Unit>()
 
     private val gattQueue: ConcurrentLinkedQueue<Runnable> = ConcurrentLinkedQueue()
@@ -241,11 +287,23 @@ class PendantBleManager(private val application: Application) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     connectedGatts[address] = gatt
                     connectionListener?.onGattConnected(address, gatt)
-                    enqueueCommand {
-                        if (!gatt.discoverServices()) {
-                            Log.e(TAG, "discoverServices returned false for $address")
-                            completeCommand()
-                        }
+                    // Create bond first if not bonded — Limitless pendant hides its service until bonded
+                    val bondState = gatt.device.bondState
+                    Log.i(TAG, "Bond state for $address: $bondState (BONDED=12, BONDING=11, NONE=10)")
+                    if (bondState == BluetoothDevice.BOND_NONE) {
+                        Log.i(TAG, "Not bonded — initiating bond before service discovery")
+                        mainHandler.post { gatt.device.createBond() }
+                        // Bond result handled in onBondStateChanged — service discovery triggered there
+                    } else {
+                        // Already bonded or bonding — proceed directly
+                        mainHandler.postDelayed({
+                            enqueueCommand {
+                                if (!gatt.discoverServices()) {
+                                    Log.e(TAG, "discoverServices returned false for $address")
+                                    completeCommand()
+                                }
+                            }
+                        }, 600)
                     }
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
