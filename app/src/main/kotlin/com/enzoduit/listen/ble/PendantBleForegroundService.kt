@@ -193,6 +193,7 @@ class PendantBleForegroundService : Service() {
 
     private fun log(msg: String) {
         Log.i(TAG, msg)
+        com.enzoduit.listen.util.RemoteLogger.log(msg)
         sendBroadcast(Intent(BROADCAST_STATUS).apply {
             putExtra(EXTRA_LOG_LINE, msg)
             `package` = packageName
