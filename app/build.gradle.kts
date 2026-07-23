@@ -15,9 +15,22 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        create("stable") {
+            storeFile = file("../keystore/listen-release.jks")
+            storePassword = "listen2026"
+            keyAlias = "listen-key"
+            keyPassword = "listen2026"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("stable")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("stable")
         }
     }
 
