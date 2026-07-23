@@ -19,7 +19,7 @@ class LimitlessBatchAudioWriter(
     companion object {
         private const val TAG = "Listen.Writer"
         const val DEVICE_MARKER = "omibatchlimitless"
-        private const val SESSION_GAP_MS = 120_000L   // >120s gap = new session
+        private const val SESSION_GAP_MS = 30_000L   // >120s gap = new session
         private const val MAX_AUDIO_SECONDS = 900L     // 15 min per file
         private const val FRAMES_PER_SECOND = 50L      // opus_fs320 = 20ms frames
         private const val MIN_VALID_TS_MS = 1_577_836_800_000L // 2020-01-01 sanity gate
