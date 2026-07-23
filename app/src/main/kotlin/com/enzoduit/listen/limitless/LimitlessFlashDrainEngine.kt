@@ -263,6 +263,11 @@ class LimitlessFlashDrainEngine(
         val msg = "Drain finished ($reason): appended<=$lastAppendedPageIndex acked<=$lastAckedPageIndex end=$endPage"
         Log.i(TAG, msg)
         logFn(msg)
+        // Finalize current audio file → triggers upload
+        if (lastAppendedPageIndex >= 0) {
+            logFn("Flushing audio file → upload...")
+            writer.flush("drain_$reason")
+        }
     }
 
     private fun resetDrainState(reason: String) {

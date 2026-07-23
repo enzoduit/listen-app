@@ -46,6 +46,12 @@ abstract class BaseBatchAudioWriter(
         synchronized(lock) { closeCurrentLocked(reason) }
     }
 
+    /** Close and finalize current file (triggers upload), but stay ready for new data. */
+    fun flush(reason: String) {
+        synchronized(lock) { closeCurrentLocked(reason) }
+        // Do NOT set stopped — writer stays open for next append
+    }
+
     protected fun openLocked(dirPath: String, fileName: String, startSec: Long, nowMs: Long): Boolean {
         if (raf != null) return true
 
