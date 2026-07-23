@@ -122,6 +122,8 @@ class PendantBleForegroundService : Service() {
 
         bleManager.characteristicValueListener = object : CharacteristicValueListener {
             override fun onCharacteristicValue(address: String, serviceUuid: String, characteristicUuid: String, value: ByteArray) {
+                val hex = value.take(16).joinToString(" ") { "%02x".format(it) }
+                log("RX ${value.size}b: $hex${if (value.size > 16) "..." else ""}")
                 drainEngine.handleCharacteristic(address, serviceUuid, characteristicUuid, value)
             }
         }
@@ -162,7 +164,7 @@ class PendantBleForegroundService : Service() {
     }
 
     private fun subscribeAndStart(address: String) {
-        // Subscribe to RX notifications
+        log("Subscribing to RX notifications...")
         bleManager.subscribeCharacteristic(address, LIMITLESS_SERVICE_UUID, LIMITLESS_RX_UUID)
         // Small delay then fire drain engine
         mainHandler.postDelayed({
@@ -170,7 +172,7 @@ class PendantBleForegroundService : Service() {
             drainEngine.onDeviceReady(address)
             updateNotification("Connected — syncing...")
             broadcastStatus("Connected")
-            log("Device ready, drain engine started")
+            log("Device ready, drain engine started — waiting 5s for first cycle")
         }, 1000)
     }
 
