@@ -141,15 +141,41 @@ class PendantBleManager(private val application: Application) {
 
     fun subscribeCharacteristic(address: String, serviceUuid: String, characteristicUuid: String) {
         val addr = address.uppercase()
-        val gatt = connectedGatts[addr] ?: return
-        val characteristic = findCharacteristic(gatt, serviceUuid, characteristicUuid) ?: return
+        val gatt = connectedGatts[addr] ?: run {
+            Log.e(TAG, "subscribeCharacteristic: no GATT for $addr")
+            return
+        }
+        val characteristic = findCharacteristic(gatt, serviceUuid, characteristicUuid) ?: run {
+            Log.e(TAG, "subscribeCharacteristic: characteristic $characteristicUuid not found on $addr")
+            // Log all available services/characteristics for debugging
+            gatt.services?.forEach { svc ->
+                Log.i(TAG, "  Service: ${svc.uuid}")
+                svc.characteristics?.forEach { chr ->
+                    Log.i(TAG, "    Char: ${chr.uuid} props=${chr.properties}")
+                    chr.descriptors?.forEach { d -> Log.i(TAG, "      Desc: ${d.uuid}") }
+                }
+            }
+            return
+        }
 
+        Log.i(TAG, "subscribeCharacteristic: found char ${characteristic.uuid} props=${characteristic.properties}")
         val descriptor = characteristic.getDescriptor(CCCD_UUID)
+        Log.i(TAG, "subscribeCharacteristic: CCCD descriptor = ${descriptor?.uuid ?: "NOT FOUND"}")
+
+        // List all descriptors on this characteristic
+        characteristic.descriptors?.forEach { d ->
+            Log.i(TAG, "  Available descriptor: ${d.uuid}")
+        }
+
         enqueueCommand {
-            gatt.setCharacteristicNotification(characteristic, true)
+            val notifySet = gatt.setCharacteristicNotification(characteristic, true)
+            Log.i(TAG, "setCharacteristicNotification result: $notifySet")
             if (descriptor != null) {
+                Log.i(TAG, "Writing CCCD ENABLE_NOTIFICATION_VALUE")
                 writeDescriptorCompat(gatt, descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
             } else {
+                // No CCCD — notifications may still work on some peripherals without it
+                Log.w(TAG, "No CCCD descriptor found — relying on setCharacteristicNotification alone")
                 completeCommand()
             }
         }

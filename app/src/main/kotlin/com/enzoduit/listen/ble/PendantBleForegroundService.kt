@@ -92,11 +92,11 @@ class PendantBleForegroundService : Service() {
 
         bleManager.connectionListener = object : BleConnectionListener {
             override fun onGattConnected(address: String, gatt: BluetoothGatt) {
-                Log.i(TAG, "GATT connected: $address")
+                log("GATT connected: $address")
             }
 
             override fun onGattDisconnected(address: String, gattHash: Int, status: Int) {
-                Log.i(TAG, "GATT disconnected: $address status=$status")
+                log("GATT disconnected: $address status=$status")
                 connected = false
                 drainEngine.onDeviceDisconnected(address)
                 updateNotification("Disconnected — reconnecting...")
@@ -105,15 +105,19 @@ class PendantBleForegroundService : Service() {
             }
 
             override fun onGattServicesDiscovered(address: String) {
-                Log.i(TAG, "Services discovered for $address — requesting MTU")
+                // Log all services to UI
+                val gatt = bleManager.connectedGatts[address]
+                gatt?.services?.forEach { svc ->
+                    log("Service: ${svc.uuid.toString().take(8)}... (${svc.characteristics.size} chars)")
+                }
+                log("Services discovered → requesting MTU 512")
                 bleManager.enqueueCommand {
                     bleManager.connectedGatts[address]?.requestMtu(MTU_SIZE) ?: bleManager.completeCommand()
                 }
             }
 
             override fun onMtuChanged(address: String, mtu: Int, status: Int) {
-                Log.i(TAG, "MTU changed to $mtu for $address")
-                // After MTU, subscribe to RX and start drain
+                log("MTU=$mtu status=$status → subscribing")
                 mainHandler.postDelayed({
                     subscribeAndStart(address)
                 }, 1000)
