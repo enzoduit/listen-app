@@ -86,6 +86,7 @@ class PendantBleForegroundService : Service() {
         uploader = HttpUploader(this) { count ->
             sendBroadcast(Intent(BROADCAST_STATUS).apply {
                 putExtra(EXTRA_UPLOAD_COUNT, count)
+                `package` = packageName
             })
         }
 
@@ -188,12 +189,14 @@ class PendantBleForegroundService : Service() {
         Log.i(TAG, msg)
         sendBroadcast(Intent(BROADCAST_STATUS).apply {
             putExtra(EXTRA_LOG_LINE, msg)
+            `package` = packageName
         })
     }
 
     private fun broadcastStatus(status: String) {
         sendBroadcast(Intent(BROADCAST_STATUS).apply {
             putExtra(EXTRA_BLE_STATUS, status)
+            `package` = packageName
         })
     }
 
