@@ -91,18 +91,9 @@ class LimitlessFlashDrainEngine(
     }
 
     fun handleCharacteristic(address: String, serviceUuid: String, characteristicUuid: String, value: ByteArray) {
-        if (!address.equals(deviceAddress, ignoreCase = true)) {
-            logFn("RX ignored: wrong address $address (expected $deviceAddress)")
-            return
-        }
-        if (!serviceUuid.equals(this.serviceUuid, ignoreCase = true)) {
-            logFn("RX ignored: wrong service $serviceUuid")
-            return
-        }
-        if (!characteristicUuid.equals(rxCharUuid, ignoreCase = true)) {
-            logFn("RX ignored: wrong char $characteristicUuid")
-            return
-        }
+        if (!address.equals(deviceAddress, ignoreCase = true)) return
+        if (!serviceUuid.equals(this.serviceUuid, ignoreCase = true)) return
+        if (!characteristicUuid.equals(rxCharUuid, ignoreCase = true)) return
         executor.execute { processPacket(value) }
     }
 

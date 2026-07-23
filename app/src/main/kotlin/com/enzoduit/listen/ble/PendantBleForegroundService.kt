@@ -126,8 +126,6 @@ class PendantBleForegroundService : Service() {
 
         bleManager.characteristicValueListener = object : CharacteristicValueListener {
             override fun onCharacteristicValue(address: String, serviceUuid: String, characteristicUuid: String, value: ByteArray) {
-                val hex = value.take(16).joinToString(" ") { "%02x".format(it) }
-                log("RX ${value.size}b: $hex${if (value.size > 16) "..." else ""}")
                 drainEngine.handleCharacteristic(address, serviceUuid, characteristicUuid, value)
             }
         }
