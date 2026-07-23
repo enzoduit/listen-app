@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
             registerReceiver(statusReceiver, filter)
         }
 
-        viewModel.appendLog("App started. Target: ${PendantBleForegroundService.TARGET_ADDRESS}")
+        viewModel.appendLog("App started. Target: ${PendantBleForegroundService.targetAddress}")
         viewModel.appendLog("Press 'Scan' to find nearby BLE devices, or 'Start Sync' to connect directly.")
     }
 
