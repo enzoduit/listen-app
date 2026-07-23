@@ -83,12 +83,12 @@ class PendantBleForegroundService : Service() {
             },
             logFn = { msg -> log(msg) }
         )
-        uploader = HttpUploader(this) { count ->
+        uploader = HttpUploader(this, onUploadCountChanged = { count ->
             sendBroadcast(Intent(BROADCAST_STATUS).apply {
                 putExtra(EXTRA_UPLOAD_COUNT, count)
                 `package` = packageName
             })
-        }
+        }, logFn = { msg -> log(msg) })
 
         bleManager.connectionListener = object : BleConnectionListener {
             override fun onGattConnected(address: String, gatt: BluetoothGatt) {

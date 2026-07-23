@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class HttpUploader(
     private val context: Context,
     private val onUploadCountChanged: ((Int) -> Unit)? = null,
+    private val logFn: ((String) -> Unit)? = null,
 ) {
     companion object {
         private const val TAG = "Listen.Uploader"
@@ -53,22 +54,23 @@ class HttpUploader(
         for (file in files) {
             try {
                 val sizeMb = file.length() / 1024.0 / 1024.0
-                Log.i(TAG, "Uploading ${file.name} (${String.format("%.2f", sizeMb)}MB) to $ENDPOINT")
-                com.enzoduit.listen.util.RemoteLogger.log("Upload start: ${file.name} (${String.format("%.2f", sizeMb)}MB)")
+                val sizeKb = file.length() / 1024
+                val msg = "⬆ Upload: ${file.name.takeLast(30)} (${sizeKb}KB)"
+                Log.i(TAG, msg); logFn?.invoke(msg); com.enzoduit.listen.util.RemoteLogger.log(msg)
                 val success = uploadFile(file)
                 if (success) {
-                    Log.i(TAG, "Uploaded ${file.name} ✅ — deleting")
-                    com.enzoduit.listen.util.RemoteLogger.log("Upload success: ${file.name}")
+                    val ok = "✅ Upload OK: ${file.name.takeLast(20)}"
+                    Log.i(TAG, ok); logFn?.invoke(ok); com.enzoduit.listen.util.RemoteLogger.log(ok)
                     file.delete()
                     val count = totalUploaded.incrementAndGet()
                     onUploadCountChanged?.invoke(count)
                 } else {
-                    Log.w(TAG, "Upload failed for ${file.name} — will retry next cycle")
-                    com.enzoduit.listen.util.RemoteLogger.log("Upload FAILED: ${file.name}")
+                    val fail = "❌ Upload FAILED: ${file.name.takeLast(20)}"
+                    Log.w(TAG, fail); logFn?.invoke(fail); com.enzoduit.listen.util.RemoteLogger.log(fail)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Upload exception for ${file.name}: ${e.message}")
-                com.enzoduit.listen.util.RemoteLogger.log("Upload EXCEPTION: ${file.name}: ${e.message}")
+                val ex = "💥 Upload EX: ${e.message}"
+                Log.e(TAG, ex); logFn?.invoke(ex); com.enzoduit.listen.util.RemoteLogger.log(ex)
             }
         }
     }
@@ -105,11 +107,11 @@ class HttpUploader(
             }
 
             val responseCode = connection.responseCode
-            val responseBody = try { connection.inputStream.bufferedReader().readText().take(200) } catch (e: Exception) { 
-                try { connection.errorStream?.bufferedReader()?.readText()?.take(200) ?: "" } catch (_: Exception) { "" }
+            val responseBody = try { connection.inputStream.bufferedReader().readText().take(100) } catch (e: Exception) { 
+                try { connection.errorStream?.bufferedReader()?.readText()?.take(100) ?: "" } catch (_: Exception) { "" }
             }
-            Log.i(TAG, "Upload ${file.name}: HTTP $responseCode body=$responseBody")
-            com.enzoduit.listen.util.RemoteLogger.log("Upload HTTP $responseCode: $responseBody")
+            val resp = "HTTP $responseCode: ${responseBody.take(80)}"
+            Log.i(TAG, resp); logFn?.invoke(resp); com.enzoduit.listen.util.RemoteLogger.log(resp)
             responseCode in 200..299
         } finally {
             connection.disconnect()
