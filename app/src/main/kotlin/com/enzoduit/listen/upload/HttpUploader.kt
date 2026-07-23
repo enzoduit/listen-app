@@ -10,10 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Uploads .bin audio files to the pendant sync webhook.
- * POST multipart/form-data to https://pendant.enzoduit.com/v2/sync-local-files
+ * POST multipart/form-data to Railway backend.
  * On HTTP 200: deletes local file.
  * On failure: leaves file for retry.
- * Skips .bin.part files (still being written).
  */
 class HttpUploader(
     private val context: Context,
@@ -53,21 +52,29 @@ class HttpUploader(
 
         for (file in files) {
             try {
-                val sizeMb = file.length() / 1024.0 / 1024.0
                 val sizeKb = file.length() / 1024
                 val msg = "⬆ Upload: ${file.name.takeLast(30)} (${sizeKb}KB)"
-                Log.i(TAG, msg); logFn?.invoke(msg)val success = uploadFile(file)
+                Log.i(TAG, msg)
+                logFn?.invoke(msg)
+
+                val success = uploadFile(file)
                 if (success) {
                     val ok = "✅ Upload OK: ${file.name.takeLast(20)}"
-                    Log.i(TAG, ok); logFn?.invoke(ok)file.delete()
+                    Log.i(TAG, ok)
+                    logFn?.invoke(ok)
+                    file.delete()
                     val count = totalUploaded.incrementAndGet()
                     onUploadCountChanged?.invoke(count)
                 } else {
                     val fail = "❌ Upload FAILED: ${file.name.takeLast(20)}"
-                    Log.w(TAG, fail); logFn?.invoke(fail)}
+                    Log.w(TAG, fail)
+                    logFn?.invoke(fail)
+                }
             } catch (e: Exception) {
                 val ex = "💥 Upload EX: ${e.message}"
-                Log.e(TAG, ex); logFn?.invoke(ex)}
+                Log.e(TAG, ex)
+                logFn?.invoke(ex)
+            }
         }
     }
 
@@ -103,11 +110,15 @@ class HttpUploader(
             }
 
             val responseCode = connection.responseCode
-            val responseBody = try { connection.inputStream.bufferedReader().readText().take(100) } catch (e: Exception) { 
+            val responseBody = try {
+                connection.inputStream.bufferedReader().readText().take(100)
+            } catch (e: Exception) {
                 try { connection.errorStream?.bufferedReader()?.readText()?.take(100) ?: "" } catch (_: Exception) { "" }
             }
             val resp = "HTTP $responseCode: ${responseBody.take(80)}"
-            Log.i(TAG, resp); logFn?.invoke(resp)responseCode in 200..299
+            Log.i(TAG, resp)
+            logFn?.invoke(resp)
+            responseCode in 200..299
         } finally {
             connection.disconnect()
         }
