@@ -149,9 +149,25 @@ class LimitlessFlashDrainEngine(
         }
         fragmentBuffer.remove(packet.index)
 
-        if (phase == Phase.DRAINING) {
+        // Process flash pages in any active phase — pendant may stream immediately after subscribe
+        if (phase == Phase.DRAINING || phase == Phase.AWAITING_STATUS) {
+            val pages = LimitlessProtocol.parsePendantMessage(complete)
+            if (pages.isNotEmpty() && phase == Phase.AWAITING_STATUS) {
+                // Pendant is already streaming — switch to DRAINING immediately
+                logFn("Pendant streaming early — switching to DRAINING (got ${pages.size} pages)")
+                statusTimeoutTask?.cancel(false)
+                phase = Phase.DRAINING
+                lastPageAtMs = System.currentTimeMillis()
+                // Schedule stall check
+                stallCheckTask?.cancel(false)
+                stallCheckTask = executor.scheduleWithFixedDelay({
+                    if (phase == Phase.DRAINING && System.currentTimeMillis() - lastPageAtMs > STALL_MS) {
+                        finishDrain("stall")
+                    }
+                }, STALL_CHECK_MS, STALL_CHECK_MS, TimeUnit.MILLISECONDS)
+            }
             for (page in LimitlessProtocol.parsePendantMessage(complete)) {
-                processFlashPage(page)
+                if (phase == Phase.DRAINING) processFlashPage(page)
             }
         }
     }
@@ -218,7 +234,8 @@ class LimitlessFlashDrainEngine(
                 return
             }
         }
-        if (maxSeenPageIndex >= endPage) {
+        // endPage=0 means we didn't get a DeviceStatus — use stall detection instead
+        if (endPage > 0 && maxSeenPageIndex >= endPage) {
             finishDrain("caught_up")
         }
     }
