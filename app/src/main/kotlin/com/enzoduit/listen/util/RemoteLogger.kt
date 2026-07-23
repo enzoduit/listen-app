@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue
  */
 object RemoteLogger {
     private const val TAG = "Listen.RemoteLog"
-    private const val ENDPOINT = "https://pendant-backend-production-e97c.up.railway.app/logs"
+    private const val ENDPOINT = "https://heath-multimedia-converted-associated.trycloudflare.com"
     private val queue = LinkedBlockingQueue<String>(200)
     private val executor = Executors.newSingleThreadExecutor { r ->
         Thread(r, "remote-logger").apply { isDaemon = true }
