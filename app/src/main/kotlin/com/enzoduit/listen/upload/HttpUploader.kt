@@ -52,17 +52,23 @@ class HttpUploader(
 
         for (file in files) {
             try {
+                val sizeMb = file.length() / 1024.0 / 1024.0
+                Log.i(TAG, "Uploading ${file.name} (${String.format("%.2f", sizeMb)}MB) to $ENDPOINT")
+                com.enzoduit.listen.util.RemoteLogger.log("Upload start: ${file.name} (${String.format("%.2f", sizeMb)}MB)")
                 val success = uploadFile(file)
                 if (success) {
-                    Log.i(TAG, "Uploaded ${file.name} — deleting")
+                    Log.i(TAG, "Uploaded ${file.name} ✅ — deleting")
+                    com.enzoduit.listen.util.RemoteLogger.log("Upload success: ${file.name}")
                     file.delete()
                     val count = totalUploaded.incrementAndGet()
                     onUploadCountChanged?.invoke(count)
                 } else {
                     Log.w(TAG, "Upload failed for ${file.name} — will retry next cycle")
+                    com.enzoduit.listen.util.RemoteLogger.log("Upload FAILED: ${file.name}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Upload exception for ${file.name}: ${e.message}")
+                com.enzoduit.listen.util.RemoteLogger.log("Upload EXCEPTION: ${file.name}: ${e.message}")
             }
         }
     }
@@ -99,7 +105,11 @@ class HttpUploader(
             }
 
             val responseCode = connection.responseCode
-            Log.i(TAG, "Upload ${file.name}: HTTP $responseCode")
+            val responseBody = try { connection.inputStream.bufferedReader().readText().take(200) } catch (e: Exception) { 
+                try { connection.errorStream?.bufferedReader()?.readText()?.take(200) ?: "" } catch (_: Exception) { "" }
+            }
+            Log.i(TAG, "Upload ${file.name}: HTTP $responseCode body=$responseBody")
+            com.enzoduit.listen.util.RemoteLogger.log("Upload HTTP $responseCode: $responseBody")
             responseCode in 200..299
         } finally {
             connection.disconnect()
